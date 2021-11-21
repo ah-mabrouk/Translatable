@@ -1,6 +1,6 @@
 <?php
 
-namespace Mabrouk\Translatable\Middleware;
+namespace Mabrouk\Translatable\Http\Middleware;
 
 use Closure;
 use Mabrouk\Translatable\Rules\LocaleRule;
