@@ -15,7 +15,7 @@ class Translatable
         $this->languageCodes = config('translatable.locale_codes');
 
         $this->availableForTranslationSaving =
-            \in_array(\strtolower(request()->method()), ['translatable.translatable_request_methods'])
+            \in_array(\strtolower(request()->method()), config('translatable.translatable_request_methods'))
             && (bool) \array_intersect(config('translatable.translatable_request_segments'), request()->segments())
             && ! (bool) \array_intersect(config('translatable.non_translatable_request_segments'), request()->segments());
     }
