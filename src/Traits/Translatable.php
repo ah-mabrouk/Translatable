@@ -28,9 +28,7 @@ Trait Translatable
     // * Define translation model relation
     public function translations()
     {
-        $className = new ReflectionClass($this);
-        $translationModelClass = config('translatable.translation_models_path') . '\\' . $className->getShortName() . 'Translation';
-        return $this->hasMany($translationModelClass);
+        return $this->hasMany($this->translationModelClass());
     }
 
     // save model translation
@@ -103,5 +101,14 @@ Trait Translatable
     {
         $this->xLocale = request()->header('X-locale') != null && \in_array(request()->header('X-locale'), config('translatable.locales')) ? request()->header('X-locale') : config('translatable.fallback_locale');
         return $this->xLocale;
+    }
+
+    private function translationModelClass()
+    {
+        $translationModelClass = config('translatable.translation_models_path') . '\\' . (new ReflectionClass($this))->getShortName() . 'Translation';
+        if (! \class_exists($translationModelClass)) {
+            $translationModelClass = (new ReflectionClass($this))->getName() . 'Translation';
+        }
+        return $this->hasMany($translationModelClass);
     }
 }
