@@ -109,6 +109,6 @@ Trait Translatable
         if (! \class_exists($translationModelClass)) {
             $translationModelClass = (new ReflectionClass($this))->getName() . 'Translation';
         }
-        return $this->hasMany($translationModelClass);
+        return $translationModelClass;
     }
 }
