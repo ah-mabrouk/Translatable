@@ -36,7 +36,6 @@ class TranslatableServiceProvider extends ServiceProvider
             ], 'translatable-config');
         }
 
-        $router = $this->app->make(Router::class);
-        $router->pushMiddlewareToGroup('api', Translatable::class);
+        $this->app->make(Router::class)->aliasMiddleware('translatable', Translatable::class);
     }
 }
