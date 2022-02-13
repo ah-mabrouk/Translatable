@@ -1,6 +1,6 @@
 # Translatable Package
 
-> ### Under construction
+> ### Complete instructions will be added soon
 <br>
 <p align="center">
     <!-- <a href="https://travis-ci.org/laravel/framework">
