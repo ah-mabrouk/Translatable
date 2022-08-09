@@ -4,7 +4,7 @@ namespace Mabrouk\Translatable;
 
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
-use Mabrouk\Translatable\Http\Middleware\Translatable;
+use Mabrouk\Translatable\Http\Middleware\TranslatableMiddleware;
 
 class TranslatableServiceProvider extends ServiceProvider
 {
@@ -36,6 +36,6 @@ class TranslatableServiceProvider extends ServiceProvider
             ], 'translatable-config');
         }
 
-        $this->app->make(Router::class)->aliasMiddleware('translatable', Translatable::class);
+        $this->app->make(Router::class)->aliasMiddleware('translatable', TranslatableMiddleware::class);
     }
 }

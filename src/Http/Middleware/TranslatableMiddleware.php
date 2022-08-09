@@ -5,7 +5,7 @@ namespace Mabrouk\Translatable\Http\Middleware;
 use Closure;
 use Mabrouk\Translatable\Rules\LocaleRule;
 
-class Translatable
+class TranslatableMiddleware
 {
     protected $languageCodes;
     private $availableForTranslationSaving;
