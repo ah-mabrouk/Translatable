@@ -11,13 +11,11 @@ Trait Translatable
 
     public static function bootTranslatable()
     {
-        if (! request()->isMethod('get')) {
-            static::saved(function ($model) {
-                if (! request()->dontTranslate) {
-                    return $model->translate(request()->all());
-                }
-            });
-        }
+        static::saved(function ($model) {
+            if (! request()->dontTranslate) {
+                return $model->translate(request()->all());
+            }
+        });
 	}
 
     public function __get($property)
@@ -41,18 +39,18 @@ Trait Translatable
 
     public function tr($attribute, $locale = null)
     {
-        return optional($this->translations->where('locale', $this->locale($locale))->first())->$attribute;
+        return $this->translations->where('locale', $this->locale($locale))->first()?->$attribute;
     }
 
     public function fallbackTranslation()
     {
-        return optional(optional(optional($this->translations)->where('locale', config('translatable.fallback_locale')))->first());
+        return $this->translations?->where('locale', config('translatable.fallback_locale'))?->first();
     }
 
     public function findTranslatedAttribute($attribute)
     {
         $translation = $this->translations->where('locale', $this->xLocale())->first();
-        return $translation && optional($translation)->$attribute != null ? $translation[$attribute] : $this->fallbackTranslation()[$attribute];
+        return $translation && $translation?->$attribute != null ? $translation[$attribute] : $this->fallbackTranslation()[$attribute];
     }
 
     public function deleteTranslations(string ...$params)
