@@ -50,7 +50,7 @@ Trait Translatable
     public function findTranslatedAttribute($attribute)
     {
         $translation = $this->translations->where('locale', $this->xLocale())->first();
-        return $translation && $translation?->$attribute != null ? $translation[$attribute] : $this->fallbackTranslation()[$attribute];
+        return $translation && $translation?->$attribute != null ? $translation?->$attribute : ($this->fallbackTranslation())?->$attribute;
     }
 
     public function deleteTranslations(string ...$params)
