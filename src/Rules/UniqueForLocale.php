@@ -30,7 +30,7 @@ class UniqueForLocale implements Rule
      */
     public function passes($attribute, $value)
     {
-        $databaseColumn = $this->databaseColumn ?? $attribute;
+        $databaseColumn = $this->databaseColumn != null ? $this->databaseColumn : $attribute;
 
         return $this->modelObject->translationModelClass::where($databaseColumn, $value)
             ->where('locale', request()->locale)
