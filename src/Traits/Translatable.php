@@ -26,7 +26,7 @@ Trait Translatable
     // * Define translation model relation
     public function translations()
     {
-        return $this->hasMany($this->translationModelClass());
+        return $this->hasMany($this->translationModelClass);
     }
 
     // save model translation
@@ -58,8 +58,8 @@ Trait Translatable
         $this->translations()
             ->when(\count($params) > 0, function ($query) use ($params) {
                 $query->whereIn('locale', $params);
-            })
-            ->delete();
+            })->delete();
+
         return $this;
     }
 
@@ -108,5 +108,10 @@ Trait Translatable
             $translationModelClass = (new ReflectionClass($this))->getName() . 'Translation';
         }
         return $translationModelClass;
+    }
+
+    public function getTranslationModelClassAttribute()
+    {
+        return $this->translationModelClass();
     }
 }
