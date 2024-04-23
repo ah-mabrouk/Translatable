@@ -90,6 +90,11 @@ Trait Translatable
 
     private function locale($locale = null)
     {
+        if ($this->translations()->count() == 0) {
+            $this->locale = config('translatable.fallback_locale');
+            return $this->locale;
+        }
+
         $this->locale = $locale != null && \in_array($locale, config('translatable.locales')) ? $locale : request()->locale;
         $this->locale = $this->locale != null && \in_array($this->locale, config('translatable.locales')) ? $this->locale : config('translatable.fallback_locale');
         return $this->locale;

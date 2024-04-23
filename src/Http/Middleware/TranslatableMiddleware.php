@@ -29,8 +29,6 @@ class TranslatableMiddleware
      */
     public function handle($request, Closure $next)
     {
-        if (! $this->availableForTranslationSaving && request()->exists('locale')) unset($request['locale']);
-
         if ($this->availableForTranslationSaving) {
             $request->validate([
                 'locale' => ['required', new LocaleRule],
