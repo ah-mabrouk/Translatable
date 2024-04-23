@@ -8,15 +8,17 @@ use Illuminate\Contracts\Validation\Rule;
 class UniqueForLocale implements Rule
 {
     public Model $modelObject;
+    public string $databaseColumn;
 
     /**
      * Create a new rule instance.
      *
      * @return void
      */
-    public function __construct(Model $modelObject)
+    public function __construct(Model $modelObject, string $databaseColumn = '')
     {
         $this->modelObject = $modelObject;
+        $this->databaseColumn = $databaseColumn;
     }
 
     /**
@@ -28,7 +30,9 @@ class UniqueForLocale implements Rule
      */
     public function passes($attribute, $value)
     {
-        return $this->modelObject->translationModelClass::where($attribute, $value)
+        $databaseColumn = $this->databaseColumn ?? $attribute;
+
+        return $this->modelObject->translationModelClass::where($databaseColumn, $value)
             ->where('locale', request()->locale)
             ->where('id', '!=', translation_id($this->modelObject))
             ->count() == 0;
