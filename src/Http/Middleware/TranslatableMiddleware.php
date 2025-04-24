@@ -2,14 +2,32 @@
 
 namespace Mabrouk\Translatable\Http\Middleware;
 
-use Closure;
 use Mabrouk\Translatable\Rules\LocaleRule;
 
+/**
+ * Middleware to handle translation-related functionality in HTTP requests.
+ *
+ * This middleware validates the `locale` parameter in requests and sets the application's
+ * locale based on the `X-locale` header or falls back to the default locale.
+ */
 class TranslatableMiddleware
 {
+    /**
+     * @var array|null The mapping of language codes for locale settings.
+     */
     protected $languageCodes;
+
+    /**
+     * @var bool Indicates whether the request is eligible for translation saving.
+     */
     private $availableForTranslationSaving;
 
+    /**
+     * Constructor to initialize middleware properties.
+     *
+     * Sets the language codes and determines if the request is eligible for translation saving
+     * based on the request method and URL segments.
+     */
     public function __construct()
     {
         $this->languageCodes = config('translatable.locale_codes');
@@ -23,11 +41,11 @@ class TranslatableMiddleware
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @return mixed
+     * Validates the `locale` parameter if the request is eligible for translation saving.
+     * Sets the application's locale based on the `X-locale` header or falls back to the default locale.
+     *
      */
-    public function handle($request, Closure $next)
+    public function handle($request, \Closure $next)
     {
         if ($this->availableForTranslationSaving) {
             $request->validate([
