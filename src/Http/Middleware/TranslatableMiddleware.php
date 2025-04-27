@@ -2,6 +2,7 @@
 
 namespace Mabrouk\Translatable\Http\Middleware;
 
+use Closure;
 use Mabrouk\Translatable\Rules\LocaleRule;
 
 /**
@@ -45,7 +46,7 @@ class TranslatableMiddleware
      * Sets the application's locale based on the `X-locale` header or falls back to the default locale.
      *
      */
-    public function handle($request, \Closure $next)
+    public function handle($request, Closure $next)
     {
         if ($this->availableForTranslationSaving) {
             $request->validate([

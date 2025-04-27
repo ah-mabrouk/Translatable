@@ -2,6 +2,8 @@
 
 namespace Mabrouk\Translatable\Traits;
 
+use ReflectionClass;
+
 /**
  * Translatable Trait
  *
@@ -206,9 +208,9 @@ trait Translatable
      */
     private function translationModelClass()
     {
-        $translationModelClass = config('translatable.translation_models_path') . '\\' . (new \ReflectionClass($this))->getShortName() . 'Translation';
+        $translationModelClass = config('translatable.translation_models_path') . '\\' . (new ReflectionClass($this))->getShortName() . 'Translation';
         if (!\class_exists($translationModelClass)) {
-            $translationModelClass = (new \ReflectionClass($this))->getName() . 'Translation';
+            $translationModelClass = (new ReflectionClass($this))->getName() . 'Translation';
         }
         return $translationModelClass;
     }

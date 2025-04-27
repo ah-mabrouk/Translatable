@@ -2,6 +2,7 @@
 
 namespace Mabrouk\Translatable\Rules;
 
+use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 
 /**
@@ -15,7 +16,7 @@ class LocaleRule implements ValidationRule
      *
      * @return void
      */
-    public function validate(string $attribute, mixed $value, \Closure $fail): void
+    public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if (!\in_array($value, config('translatable.locales'))) {
             $fail(":attribute must be one of [" . \implode(', ', config('translatable.locales')) . "]");

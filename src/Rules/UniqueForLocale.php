@@ -2,6 +2,7 @@
 
 namespace Mabrouk\Translatable\Rules;
 
+use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Database\Eloquent\Model;
 
@@ -26,7 +27,7 @@ class UniqueForLocale implements ValidationRule
      *
      * @return void
      */
-    public function validate(string $attribute, mixed $value, \Closure $fail): void
+    public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         $databaseColumn = $this->databaseColumn ?: $attribute;
 
