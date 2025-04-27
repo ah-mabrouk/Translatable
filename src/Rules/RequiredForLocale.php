@@ -2,6 +2,7 @@
 
 namespace Mabrouk\Translatable\Rules;
 
+use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Database\Eloquent\Model;
 
@@ -34,7 +35,7 @@ class RequiredForLocale implements ValidationRule
      *
      * @return void
      */
-    public function validate(string $attribute, mixed $value, \Closure $fail): void
+    public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if (\is_null($value) && $this->modelObject->translationModelClass::where('locale', request()->input('locale'))->doesntExist()) {
             $fail('validation.required')->translate();
