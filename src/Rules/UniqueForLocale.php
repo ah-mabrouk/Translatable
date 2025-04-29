@@ -2,49 +2,42 @@
 
 namespace Mabrouk\Translatable\Rules;
 
+use Closure;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Contracts\Validation\Rule;
 
-class UniqueForLocale implements Rule
+/**
+ * Validation rule to ensure a unique value for a specific locale.
+ */
+class UniqueForLocale implements ValidationRule
 {
-    public Model $modelObject;
-    public string $databaseColumn;
-
     /**
      * Create a new rule instance.
      *
+     * @param Model $modelObject The model object to validate against.
+     * @param string $databaseColumn The corresponding attribute's database column to check (optional).
+     */
+    public function __construct(public Model $modelObject, public string $databaseColumn = '')
+    {
+        //
+    }
+
+    /**
+     * Validates the given attribute value to ensure it is unique for the specified locale.
+     *
      * @return void
      */
-    public function __construct(Model $modelObject, string $databaseColumn = '')
+    public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        $this->modelObject = $modelObject;
-        $this->databaseColumn = $databaseColumn;
-    }
+        $databaseColumn = $this->databaseColumn ?: $attribute;
 
-    /**
-     * Determine if the validation rule passes.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function passes($attribute, $value)
-    {
-        $databaseColumn = $this->databaseColumn != null ? $this->databaseColumn : $attribute;
-
-        return $this->modelObject->translationModelClass::where($databaseColumn, $value)
-            ->where('locale', request()->locale)
+        $valueExistsForLocale = $this->modelObject->translationModelClass::where($databaseColumn, $value)
+            ->where('locale', request()->input('locale'))
             ->where('id', '!=', translation_id($this->modelObject))
-            ->count() == 0;
-    }
+            ->exists();
 
-    /**
-     * Get the validation error message.
-     *
-     * @return string
-     */
-    public function message()
-    {
-        return __('validation.unique');
+        if ($valueExistsForLocale) {
+            $fail('validation.unique')->translate();
+        }
     }
 }

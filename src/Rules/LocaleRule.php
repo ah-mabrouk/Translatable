@@ -2,39 +2,24 @@
 
 namespace Mabrouk\Translatable\Rules;
 
-use Illuminate\Contracts\Validation\Rule;
+use Closure;
+use Illuminate\Contracts\Validation\ValidationRule;
 
-class LocaleRule implements Rule
+/**
+ * Validation rule to ensure that the given value
+ * is one of the allowed locales defined in the application's configuration.
+ */
+class LocaleRule implements ValidationRule
 {
     /**
-     * Create a new rule instance.
+     * Validates the given attribute to ensure it matches one of the allowed locales.
      *
      * @return void
      */
-    public function __construct()
+    public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        //
-    }
-
-    /**
-     * Determine if the validation rule passes.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function passes($attribute, $value)
-    {
-        return \in_array($value, config('translatable.locales'));
-    }
-
-    /**
-     * Get the validation error message.
-     *
-     * @return string
-     */
-    public function message()
-    {
-        return ':attribute must be one of [' . \implode(', ', config('translatable.locales')) . ']';
+        if (!\in_array($value, config('translatable.locales'))) {
+            $fail(":attribute must be one of [" . \implode(', ', config('translatable.locales')) . "]");
+        }
     }
 }
