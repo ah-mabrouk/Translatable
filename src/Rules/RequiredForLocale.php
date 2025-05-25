@@ -37,8 +37,28 @@ class RequiredForLocale implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        if (\is_null($value) && $this->modelObject->translationModelClass::where('locale', request()->input('locale'))->doesntExist()) {
+        if (!$this->hasTranslatedAttributesInRequest() || !\is_null($value)) {
+            return;
+        }
+
+        if ($this->isTranslationMissingForLocale()) {
             $fail('validation.required')->translate();
         }
+    }
+
+    /**
+     * Check if any translated attributes are present in the request.
+     */
+    protected function hasTranslatedAttributesInRequest(): bool
+    {
+        return !empty(array_intersect($this->modelObject->translatedAttributes, array_keys(request()->all())));
+    }
+
+    /**
+     * Check if the translation for the current locale does not exist.
+     */
+    protected function isTranslationMissingForLocale(): bool
+    {
+        return $this->modelObject->translations()->where('locale', request()->input('locale'))->doesntExist();
     }
 }
