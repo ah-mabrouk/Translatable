@@ -1,0 +1,21 @@
+<?php
+
+namespace {{ namespace }};
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class {{ class }} extends Model
+{
+    protected $fillable = [
+        '{{ foreignKey }}',
+
+        'locale',
+        {{ fields }}
+    ];
+
+    public function {{ parentModelName }}(): BelongsTo
+    {
+        return $this->belongsTo({{ parentModelClassname }}::class, '{{ foreignKey }}');
+    }
+}
