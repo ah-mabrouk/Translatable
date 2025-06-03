@@ -36,24 +36,21 @@ class MakeTranslationModelCommand extends Command
     {
         try {
             $this->setNamespaceAndBaseDir();
-            
+
             if (!$this->argument('model')) {
-                $modelName = $this->chooseModel();
-                $this->input->setArgument('model', $modelName);
+                $this->input->setArgument('model', $this->chooseModel());
             }
 
-            // Find and validate the parent model first
+            // Find and validate the parent model
             $modelName = $this->argument('model');
-            $modelPath = $this->findModelFile($modelName, $this->baseDir);
-            
+            $modelPath = $this->findModelFile($modelName);
+
             if (!$modelPath) {
                 throw new InvalidArgumentException("Model {$modelName} not found!");
             }
-            
-            $modelInfo = $this->getModelInfo();
-            
-            $this->ensureDirectoryExists($modelInfo['baseDir']);
-            
+
+            $modelInfo = $this->getModelInfo($modelPath);
+
             if (!$this->canCreateFile($modelInfo['filePath'])) {
                 return 1;
             }
@@ -81,6 +78,69 @@ class MakeTranslationModelCommand extends Command
     {
         $this->namespace = config('translatable.translation_models_path', 'App\\Models');
         $this->baseDir = app_path(str_replace('App\\', '', str_replace('App\\\\', '/', $this->namespace)));
+
+        if (!File::isDirectory($this->baseDir)) {
+            File::makeDirectory($this->baseDir, 0755, true);
+        }
+    }
+
+    /**
+     * Let user choose a model from available models.
+     *
+     * @return string
+     */
+    protected function chooseModel(): string
+    {
+        $models = $this->getAvailableModels();
+
+        if (empty($models)) {
+            throw new InvalidArgumentException('No models found in ' . $this->namespace);
+        }
+
+        return $this->choice(
+            'Which model would you like to create a translation for?',
+            $models
+        );
+    }
+
+    /**
+     * Get available models in the models directory.
+     *
+     * @return array
+     */
+    protected function getAvailableModels(): array
+    {
+        $files = File::allFiles($this->baseDir);
+        $models = [];
+
+        foreach ($files as $file) {
+            if ($file->getExtension() === 'php') {
+                $name = str_replace(['/', '.php'], ['\\', ''], $file->getRelativePathname());
+                // Skip existing translation models
+                if (!str_ends_with($name, 'Translation')) {
+                    $models[] = $name;
+                }
+            }
+        }
+
+        return $models;
+    }
+
+    /**
+     * Find the model file.
+     *
+     * @param string $modelName
+     * @return string|null
+     */
+    protected function findModelFile(string $modelName): ?string
+    {
+        $modelFile = $this->baseDir . '/' . $modelName . '.php';
+
+        if (File::exists($modelFile)) {
+            return $modelFile;
+        }
+
+        return null;
     }
 
     /**
@@ -88,53 +148,72 @@ class MakeTranslationModelCommand extends Command
      *
      * @return array
      */
-    protected function getModelInfo(): array
+    protected function getModelInfo(string $modelPath): array
     {
-        $parentModelClassname = $this->argument('model');
-        $namespace = $this->namespace;
-        $baseDir = $this->baseDir;
-
-        if (strpos($parentModelClassname, '/') !== false) {
-            [$subdirectory, $parentModelClassname, $namespace, $baseDir] = $this->handleSubdirectory($parentModelClassname);
-        }
-
-        // Clean up the model name to ensure proper format
-        $parentModelClassname = $this->normalizeModelName($parentModelClassname);
-
-        $modelPath = $this->findModelFile($parentModelClassname, $baseDir);
-        $translatedFields = $this->extractTranslatedAttributes($modelPath);
-
+        $parentModelClassname = $this->normalizeModelName($this->argument('model')); // Clean up the model name to ensure proper format
         $translationModelName = $parentModelClassname . 'Translation';
         $parentModelName = lcfirst($parentModelClassname); // Convert to camelCase
-        $tableName = $this->formatTableName($parentModelClassname); // Use snake_case for table/column names
+        $tableName = $this->formatTableName($parentModelClassname); // Use snake_case for table name
         $foreignKey = $this->option('foreignKey') ?: $tableName . '_id';
-        $filePath = $baseDir . '/' . $translationModelName . '.php';
+        $filePath = $this->baseDir . '/' . $translationModelName . '.php';
+        $translatedFields = $this->extractTranslatedAttributes($modelPath);
 
         return [
             'parentModelClassname' => $parentModelClassname,
             'translationModelName' => $translationModelName,
             'parentModelName' => $parentModelName,
+            'tableName' => $tableName,
             'foreignKey' => $foreignKey,
             'filePath' => $filePath,
-            'namespace' => $namespace,
-            'baseDir' => $baseDir,
             'translatedFields' => $translatedFields
         ];
     }
 
     /**
-     * Normalize the model name to StudlyCase.
+     * Normalize the model name to PascalCase.
      *
      * @param string $name
      * @return string
      */
     protected function normalizeModelName(string $name): string
     {
-        // Remove any spaces and convert to StudlyCase
+        // Remove any spaces and convert to PascalCase
         $name = str_replace(['-', '_', ' '], '', ucwords($name, '-_ '));
-        
+
         // Ensure the first character is uppercase
         return ucfirst($name);
+    }
+
+    /**
+     * Extract translated attributes from the parent model.
+     *
+     * @param string $modelPath
+     * @return array
+     */
+    protected function extractTranslatedAttributes(string $modelPath): array
+    {
+        $content = File::get($modelPath);
+        $warningMessage = '';
+
+        if (!preg_match('/public\s+\$translatedAttributes\s*=\s*\[(.*?)\]/s', $content, $matches)) {
+            $warningMessage = 'Could not find translatedAttributes property in the model.';
+        } else {
+            $attributesString = $matches[1];
+            preg_match_all('/[\'"]([^\'"]+)[\'"]/', $attributesString, $attributes);
+
+            if (!empty($attributes[1])) {
+                return $attributes[1];
+            }
+            $warningMessage = 'No translated attributes found in the model.';
+        }
+
+        $this->components->warn($warningMessage);
+        if (!$this->confirm('Would you like to continue without auto-filling the fillable attributes?', true)) {
+            $this->components->info('Command cancelled.');
+            exit(1);
+        }
+
+        return [];
     }
 
     /**
@@ -148,36 +227,6 @@ class MakeTranslationModelCommand extends Command
         // Convert camel case to snake case
         $name = preg_replace('/([a-z])([A-Z])/', '$1_$2', $name);
         return strtolower($name);
-    }
-
-    /**
-     * Handle subdirectory in model path.
-     *
-     * @param string $parentModelClassname
-     * @return array
-     */
-    protected function handleSubdirectory(string $parentModelClassname): array
-    {
-        $parts = explode('/', $parentModelClassname);
-        $modelName = array_pop($parts);
-        $subdirectory = implode('/', $parts);
-        $namespace = $this->namespace . '\\' . str_replace('/', '\\', $subdirectory);
-        $baseDir = $this->baseDir . '/' . $subdirectory;
-
-        return [$subdirectory, $modelName, $namespace, $baseDir];
-    }
-
-    /**
-     * Ensure the directory exists, create if it doesn't.
-     *
-     * @param string $directory
-     * @return void
-     */
-    protected function ensureDirectoryExists(string $directory): void
-    {
-        if (!File::isDirectory($directory)) {
-            File::makeDirectory($directory, 0755, true);
-        }
     }
 
     /**
@@ -212,19 +261,19 @@ class MakeTranslationModelCommand extends Command
         }
 
         // Format the fields string only if there are translated fields
-        $fieldsString = empty($modelInfo['translatedFields']) ? '' : ",\n        '" . implode("',\n        '", $modelInfo['translatedFields']) . "'";
+        $fieldsString = empty($modelInfo['translatedFields']) ? '' : "\n        '" . implode("',\n        '", $modelInfo['translatedFields']) . "',";
 
         $stub = str_replace(
             [
                 '{{ namespace }}',
                 '{{ class }}',
-                '{{ parentModelName }}',
-                '{{ parentModelClassname }}',
+                '{{ relationMethodName }}',
+                '{{ relationModelClassname }}',
                 '{{ foreignKey }}',
                 '{{ fields }}'
             ],
             [
-                $modelInfo['namespace'],
+                $this->namespace,
                 $modelInfo['translationModelName'],
                 $modelInfo['parentModelName'],
                 $modelInfo['parentModelClassname'],
@@ -238,77 +287,6 @@ class MakeTranslationModelCommand extends Command
     }
 
     /**
-     * Let user choose a model from available models.
-     *
-     * @return string
-     */
-    protected function chooseModel(): string
-    {
-        $models = $this->getAvailableModels();
-
-        if (empty($models)) {
-            throw new InvalidArgumentException('No models found in ' . $this->namespace);
-        }
-
-        return $this->choice(
-            'Which model would you like to create a translation for?',
-            $models
-        );
-    }
-
-    /**
-     * Get available models in the models directory.
-     *
-     * @return array
-     */
-    protected function getAvailableModels(): array
-    {
-        if (!File::isDirectory($this->baseDir)) {
-            return [];
-        }
-
-        $files = File::allFiles($this->baseDir);
-        $models = [];
-
-        foreach ($files as $file) {
-            if ($file->getExtension() === 'php') {
-                $name = str_replace(['/', '.php'], ['\\', ''], $file->getRelativePathname());
-                // Skip existing translation models
-                if (!str_ends_with($name, 'Translation')) {
-                    $models[] = $name;
-                }
-            }
-        }
-
-        return $models;
-    }
-    
-    /**
-     * Find the model file.
-     *
-     * @param string $modelName
-     * @param string $basePath
-     * @return string|null
-     */
-    protected function findModelFile(string $modelName, string $basePath): ?string
-    {
-        $modelFile = $basePath . '/' . $modelName . '.php';
-        
-        if (File::exists($modelFile)) {
-            return $modelFile;
-        }
-        
-        $files = File::allFiles($basePath);
-        foreach ($files as $file) {
-            if ($file->getFilename() === $modelName . '.php') {
-                return $file->getPathname();
-            }
-        }
-        
-        return null;
-    }
-
-    /**
      * Create a migration for the translation table.
      *
      * @param array $modelInfo
@@ -316,13 +294,15 @@ class MakeTranslationModelCommand extends Command
      */
     protected function createMigration(array $modelInfo): void
     {
-        $tableName = Str::snake(Str::plural($modelInfo['parentModelClassname'])) . '_translations';
-        
-        $stub = File::get(__DIR__ . '/../../stubs/translation-migration.stub');
+        $tableName = $modelInfo['tableName'] . '_translations';
 
-        if (!$stub) {
+        $stubPath = __DIR__ . '/../../stubs/translation-migration.stub';
+
+        if (!File::exists($stubPath)) {
             throw new InvalidArgumentException("Translation migration stub file not found at {$stubPath}");
         }
+
+        $stub = File::get($stubPath);
 
         $stub = str_replace(
             ['{{ table }}', '{{ foreign_key }}', '{{ model }}'],
@@ -342,37 +322,5 @@ class MakeTranslationModelCommand extends Command
         File::put($path, $stub);
 
         $this->components->info("Migration [{$path}] created successfully.");
-    }
-
-    /**
-     * Extract translated attributes from the parent model.
-     *
-     * @param string $modelPath
-     * @return array
-     */
-    protected function extractTranslatedAttributes(string $modelPath): array
-    {
-        $content = File::get($modelPath);
-        $warningMessage = '';
-
-        if (!preg_match('/public\s+\$translatedAttributes\s*=\s*\[(.*?)\]/s', $content, $matches)) {
-            $warningMessage = 'Could not find translatedAttributes property in the model.';
-        } else {
-            $attributesString = $matches[1];
-            preg_match_all('/[\'"]([^\'"]+)[\'"]/', $attributesString, $attributes);
-
-            if (!empty($attributes[1])) {
-                return $attributes[1];
-            }
-            $warningMessage = 'No translated attributes found in the model.';
-        }
-
-        $this->components->warn($warningMessage);
-        if (!$this->confirm('Would you like to continue without auto-filling the fillable attributes?', true)) {
-            $this->components->info('Command cancelled.');
-            exit(1);
-        }
-        
-        return [];
     }
 }

@@ -14,8 +14,16 @@ class {{ class }} extends Model
         {{ fields }}
     ];
 
-    public function {{ parentModelName }}(): BelongsTo
+    ## Relations
+
+    public function {{ relationMethodName }}(): BelongsTo
     {
-        return $this->belongsTo({{ parentModelClassname }}::class, '{{ foreignKey }}');
+        return $this->belongsTo({{ relationModelClassname }}::class, '{{ foreignKey }}');
     }
+
+    ## Getters & Setters
+
+    ## Scopes
+
+    ## Other Methods
 }
