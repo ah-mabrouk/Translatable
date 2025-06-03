@@ -3,7 +3,6 @@
 namespace Mabrouk\Translatable\Http\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\File;
 use InvalidArgumentException;
 
