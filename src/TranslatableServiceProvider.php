@@ -4,7 +4,7 @@ namespace Mabrouk\Translatable;
 
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
-use Mabrouk\Translatable\Http\Commands\MakeTranslationModelCommand;
+use Mabrouk\Translatable\Console\Commands\MakeTranslationModelCommand;
 use Mabrouk\Translatable\Http\Middleware\TranslatableMiddleware;
 
 class TranslatableServiceProvider extends ServiceProvider
