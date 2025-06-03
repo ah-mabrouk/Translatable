@@ -1,0 +1,29 @@
+<?php
+
+namespace {{ namespace }};
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class {{ class }} extends Model
+{
+    protected $fillable = [
+        '{{ foreignKey }}',
+
+        'locale',
+        {{ fields }}
+    ];
+
+    ## Relations
+
+    public function {{ relationMethodName }}(): BelongsTo
+    {
+        return $this->belongsTo({{ relationModelClassname }}::class, '{{ foreignKey }}');
+    }
+
+    ## Getters & Setters
+
+    ## Scopes
+
+    ## Other Methods
+}

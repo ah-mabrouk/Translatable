@@ -4,6 +4,7 @@ namespace Mabrouk\Translatable;
 
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
+use Mabrouk\Translatable\Http\Commands\MakeTranslationModelCommand;
 use Mabrouk\Translatable\Http\Middleware\TranslatableMiddleware;
 
 class TranslatableServiceProvider extends ServiceProvider
@@ -34,6 +35,11 @@ class TranslatableServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__ . '/config/translatable.php' => config_path('translatable.php'),
             ], 'translatable-config');
+            
+            // Register commands
+            $this->commands([
+                MakeTranslationModelCommand::class,
+            ]);
         }
 
         $this->app->make(Router::class)->aliasMiddleware('translatable', TranslatableMiddleware::class);
